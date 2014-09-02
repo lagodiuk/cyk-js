@@ -16,10 +16,10 @@ function init() {
         var parseTable = create2dArray(tokLen);
 
         for (var right = 1; right < tokLen; right++) {
-	    var token = tokens[right-1];
+            var token = tokens[right - 1];
             var terminalRules = grammar[token];
             for (var r in terminalRules) {
-		var rule = terminalRules[r];
+                var rule = terminalRules[r];
                 parseTable[right - 1][right].push({
                     rule: rule,
                     token: token
@@ -28,16 +28,18 @@ function init() {
 
             for (var left = right - 2; left >= 0; left--) {
                 for (var mid = left + 1; mid < right; mid++) {
-                    for (var x in parseTable[left][mid]) {
-                        for (var y in parseTable[mid][right]) {
-                            var rls = grammar[parseTable[left][mid][x]['rule'] + '_' + parseTable[mid][right][y]['rule']]
+                    var leftSubtreeRoots = parseTable[left][mid];
+                    var rightSubtreeRoots = parseTable[mid][right];
+                    for (var leftRootIndx in leftSubtreeRoots) {
+                        for (var rightRootIndx in rightSubtreeRoots) {
+                            var rls = grammar[leftSubtreeRoots[leftRootIndx]['rule'] + '_' + rightSubtreeRoots[rightRootIndx]['rule']]
                             if (rls) {
                                 for (var r in rls) {
                                     parseTable[left][right].push({
                                         rule: rls[r],
-                                        k: mid,
-                                        x: x,
-                                        y: y
+                                        middle: mid,
+                                        leftRootIndex: leftRootIndx,
+                                        rightRootIndex: rightRootIndx
                                     });
                                 }
                             }
@@ -69,11 +71,11 @@ function init() {
         return hashMap;
     }
 
-    function traverseParseTable(parseTable, i, j, x) {
-        if (!parseTable[i][j][x]['k']) {
-            return '<li><a href="#">' + parseTable[i][j][x]['rule'] + '</a><ul><li><a href="#">' + parseTable[i][j][x]['token'] + '</a></li></ul></li>';
+    function traverseParseTable(parseTable, left, right, rootIndex) {
+        if (!parseTable[left][right][rootIndex]['middle']) {
+            return '<li><a href="#">' + parseTable[left][right][rootIndex]['rule'] + '</a><ul><li><a href="#">' + parseTable[left][right][rootIndex]['token'] + '</a></li></ul></li>';
         }
-        return '<li><a href="#">' + parseTable[i][j][x]['rule'] + '</a><ul>' + traverseParseTable(parseTable, i, parseTable[i][j][x]['k'], parseTable[i][j][x]['x']) + traverseParseTable(parseTable, parseTable[i][j][x]['k'], j, parseTable[i][j][x]['y']) + '</ul></li>';
+        return '<li><a href="#">' + parseTable[left][right][rootIndex]['rule'] + '</a><ul>' + traverseParseTable(parseTable, left, parseTable[left][right][rootIndex]['middle'], parseTable[left][right][rootIndex]['leftRootIndex']) + traverseParseTable(parseTable, parseTable[left][right][rootIndex]['middle'], right, parseTable[left][right][rootIndex]['rightRootIndex']) + '</ul></li>';
     }
 
     // http://en.wikipedia.org/wiki/Chomsky_normal_form
@@ -130,21 +132,21 @@ function init() {
         document.body.innerHTML += '<div class="tree" id="displayTree"><ul>' + traverseParseTable(parseTable, 0, parseTable.length - 1, i) + '</ul></div><br/>';
     }
 
-	// http://en.wikipedia.org/wiki/CYK_algorithm#Example
-	grammar = [
-	'S -> NP VP',
-	'VP -> VP PP',
-	'VP -> V NP',
-	'VP -> eats',
-	'PP -> P NP',
-	'NP -> Det N',
-	'NP -> she',
-	'V -> eats',
-	'P -> with',
-	'N -> fish',
-	'N -> fork',
-	'Det -> a'
-];
+    // http://en.wikipedia.org/wiki/CYK_algorithm#Example
+    grammar = [
+        'S -> NP VP',
+        'VP -> VP PP',
+        'VP -> V NP',
+        'VP -> eats',
+        'PP -> P NP',
+        'NP -> Det N',
+        'NP -> she',
+        'V -> eats',
+        'P -> with',
+        'N -> fish',
+        'N -> fork',
+        'Det -> a'
+    ];
 
     var parseTable = parse(grammarToHashMap(grammar), 'she eats a fish with a fork'.split(' '));
 

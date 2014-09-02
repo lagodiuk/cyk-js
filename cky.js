@@ -15,25 +15,27 @@ function init() {
         var tokLen = tokens.length + 1;
         var parseTable = create2dArray(tokLen);
 
-        for (var j = 1; j < tokLen; j++) {
-            var rls = grammar[tokens[j - 1]];
-            for (var r in rls) {
-                parseTable[j - 1][j].push({
-                    rule: rls[r],
-                    token: tokens[j - 1]
+        for (var right = 1; right < tokLen; right++) {
+	    var token = tokens[right-1];
+            var terminalRules = grammar[token];
+            for (var r in terminalRules) {
+		var rule = terminalRules[r];
+                parseTable[right - 1][right].push({
+                    rule: rule,
+                    token: token
                 });
             }
 
-            for (var i = j - 2; i >= 0; i--) {
-                for (var k = i + 1; k < j; k++) {
-                    for (var x in parseTable[i][k]) {
-                        for (var y in parseTable[k][j]) {
-                            var rls = grammar[parseTable[i][k][x]['rule'] + '_' + parseTable[k][j][y]['rule']]
+            for (var left = right - 2; left >= 0; left--) {
+                for (var mid = left + 1; mid < right; mid++) {
+                    for (var x in parseTable[left][mid]) {
+                        for (var y in parseTable[mid][right]) {
+                            var rls = grammar[parseTable[left][mid][x]['rule'] + '_' + parseTable[mid][right][y]['rule']]
                             if (rls) {
                                 for (var r in rls) {
-                                    parseTable[i][j].push({
+                                    parseTable[left][right].push({
                                         rule: rls[r],
-                                        k: k,
+                                        k: mid,
                                         x: x,
                                         y: y
                                     });
@@ -47,41 +49,6 @@ function init() {
 
         return parseTable;
     }
-
-    grammarHashMap = {
-            'n': ['exp'],
-            '(': ['l_par'],
-            ')': ['r_par'],
-            '+': ['add'],
-            '-': ['sub'],
-            '*': ['mul'],
-            '/': ['div'],
-            'l_par_exp2': ['exp'],
-            'exp_r_par': ['exp2'],
-            'exp_exp3': ['exp'],
-            'add_exp': ['exp3'],
-            'exp_exp4': ['exp'],
-            'sub_exp': ['exp4'],
-            'exp_exp5': ['exp'],
-            'mul_exp': ['exp5'],
-            'exp_exp6': ['exp'],
-            'div_exp': ['exp6']
-        }
-        /*
-        E --> number
-          E --> l_par E2
-          E2 -> E r_par
-          E --> E E3
-          E3 -> add E
-          E --> E E4
-          E4 -> sub E
-          E --> E E5
-          E5 -> mul E
-          E --> E E6
-          E6 -> div E
-        */
-        //parse( grammarHashMap, [ '(', 'n', '+', 'n', ')', '+', '(', 'n', '+', 'n', ')', '+', 'n' ] );
-        //parse( grammarHashMap, [ 'n', '-', 'n', '+', 'n' ] );
 
     function grammarToHashMap(rules) {
         var hashMap = {};
@@ -104,9 +71,9 @@ function init() {
 
     function traverseParseTable(parseTable, i, j, x) {
         if (!parseTable[i][j][x]['k']) {
-            return '<li><a href="#">' + parseTable[i][j][x]['rule'] + '</a><ul>' + '<li><a href="#">' + parseTable[i][j][x]['token'] + '</a></li>' + '</ul>' + '</li>';
+            return '<li><a href="#">' + parseTable[i][j][x]['rule'] + '</a><ul><li><a href="#">' + parseTable[i][j][x]['token'] + '</a></li></ul></li>';
         }
-        return '<li><a href="#">' + parseTable[i][j][x]['rule'] + '</a><ul>' + traverseParseTable(parseTable, i, parseTable[i][j][x]['k'], parseTable[i][j][x]['x']) + traverseParseTable(parseTable, parseTable[i][j][x]['k'], j, parseTable[i][j][x]['y']) + '</ul>' + '</li>';
+        return '<li><a href="#">' + parseTable[i][j][x]['rule'] + '</a><ul>' + traverseParseTable(parseTable, i, parseTable[i][j][x]['k'], parseTable[i][j][x]['x']) + traverseParseTable(parseTable, parseTable[i][j][x]['k'], j, parseTable[i][j][x]['y']) + '</ul></li>';
     }
 
     // http://en.wikipedia.org/wiki/Chomsky_normal_form
@@ -157,11 +124,33 @@ function init() {
         'PowOp -> ^'
     ];
 
-    //console.log(JSON.stringify(grammarToHashMap(grammar), null, 4));
     var parseTable = parse(grammarToHashMap(grammar), 'Number ^ Number + Number * Number'.split(' '));
 
     for (var i in parseTable[0][parseTable.length - 1]) {
         document.body.innerHTML += '<div class="tree" id="displayTree"><ul>' + traverseParseTable(parseTable, 0, parseTable.length - 1, i) + '</ul></div><br/>';
     }
+
+	// http://en.wikipedia.org/wiki/CYK_algorithm#Example
+	grammar = [
+	'S -> NP VP',
+	'VP -> VP PP',
+	'VP -> V NP',
+	'VP -> eats',
+	'PP -> P NP',
+	'NP -> Det N',
+	'NP -> she',
+	'V -> eats',
+	'P -> with',
+	'N -> fish',
+	'N -> fork',
+	'Det -> a'
+];
+
+    var parseTable = parse(grammarToHashMap(grammar), 'she eats a fish with a fork'.split(' '));
+
+    for (var i in parseTable[0][parseTable.length - 1]) {
+        document.body.innerHTML += '<div class="tree" id="displayTree"><ul>' + traverseParseTable(parseTable, 0, parseTable.length - 1, i) + '</ul></div><br/>';
+    }
+
 
 }

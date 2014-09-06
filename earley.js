@@ -1,15 +1,33 @@
-function parse( words, grammar ) {
-    var idToStateMap = {};
+// words == tokens
+function parse( words, grammar, rootRule ) {
+    // initialize chart
+    // (length of chart == number of tokens + 1)
     var chart = [];
-    var id = 0;
     for(var i = 0; i < words.length + 1; i++) {
         chart[i] = [];
     }
+    // used for indexing states by id
+    // (needed for backtracking)
+    var idToStateMap = {};
+    var id = 0;
     
+    // each state contains fields:
+    // 1) lhs - left hand side of rule (string)
+    // 2) rhs - right hand side of rule (array)
+    // 3) dot - index to subrule of right hand side rule (if state is complete - dot == length of rhs) (int)
+    // 4) pos - index of chart column, which contains state, from which given state was derived (int)
+    // 5) id - unique id of given state (int)
+    // 6) ref - object with fields 'dot' (int) and 'ref' (int)
+    // 'dot' - index to right hand side subrule (int)
+    // 'ref' - id of state, which derived from this subrule (int) - used in backtracking, to generate parsing trees
+    
+    // check if given state incomplete:
+    // if 'dot' points to the end of right hand side rules or not
     function incomplete( state ) {
         return state['dot'] < state['rhs'].length;
     }
     
+    // checks whenever right hand side subrule, to which points 'dot' - terminal or non-terminal
     function expectedNonTerminal( state, grammar ) {
         var expected = state['rhs'][state['dot']];
         if( grammar[expected] ) {
@@ -18,12 +36,18 @@ function parse( words, grammar ) {
         return false;
     }
     
+    // ads newState to column in chart (indexed by specific position)
+    // also - adds id to newState, and adds it to index: idToStateMap
+    // (if given column already contains this state - dosn't add duplicate, but merge 'ref')
+    //
+    // TODO: use HashSet + LinkedList
     function addToChart( newState, position ) {
         if(!newState['ref']) {
             newState['ref'] = [];
         }
         newState['id'] = id;        
-        
+
+        // TODO: use HashSet + LinkedList
         for(var x in chart[position]) {
             var chartState = chart[position][x];
             if(chartState['lhs'] == newState['lhs']
@@ -37,7 +61,7 @@ function parse( words, grammar ) {
         
         chart[position].push(newState);
         idToStateMap[id] = newState;
-        
+
         id++;
     }
     
@@ -101,14 +125,18 @@ function parse( words, grammar ) {
         }
         console.log();
     }
-
-    var initialState = {
-        'lhs': 'R',
-        'rhs': ['S'],
-        'dot': 0,
-        'pos': 0
-    };
-    addToChart(initialState, 0);
+    
+    var rootRuleRhss = grammar[rootRule];
+    for(var i in rootRuleRhss) {
+        var initialState = {
+            'lhs': rootRule,
+            'rhs': rootRuleRhss[i],
+            'dot': 0,
+            'pos': 0
+        };
+        addToChart(initialState, 0);
+    }
+    
     log('init', chart);
     for(var i = 0; i < words.length + 1; i++) {
         j = 0;
@@ -134,6 +162,10 @@ function parse( words, grammar ) {
     console.log('');
     for(var id in idToStateMap) {
         console.log(id + '\t' + JSON.stringify(idToStateMap[id], null, 0));    
+    }
+    
+    // search for state, which has rootRule in lhs
+    for(var i in chart[chart.length - 1]) {
     }
 }
 
@@ -183,5 +215,5 @@ var grammar = [
     'add_sub -> + | -',
     'mul_div -> * | /'
 ];
-parse('2 + 3 * 4'.split(' '), processGrammar(grammar));
+parse('2 + 3 * 4'.split(' '), processGrammar(grammar), 'R');
 //alert(JSON.stringify(processGrammar(grammar), null, 4))

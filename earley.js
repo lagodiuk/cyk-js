@@ -65,6 +65,9 @@ function parse( words, grammar, rootRule ) {
         id++;
     }
     
+    // this function is called in case when 'dot' points to non-terminal
+    // using all rules for given non-terminal - creating new states, 
+    // and adding them to chart (to column with index 'j')
     function predictor( state, j, grammar ) {
         var nonTerm = state['rhs'][state['dot']];
         var productions = grammar[nonTerm];
@@ -78,7 +81,11 @@ function parse( words, grammar, rootRule ) {
             addToChart(newState, j);
         }
     }
-    
+
+    // this function is called in case when 'dot' points to terminal
+    // in case, when part of speech of word with index 'j' corresponds to given terminal -
+    // (terminal - can produce this part of speech, or terminal == word[j])
+    // creating new state, and add it to column with index ('j' + 1)
     function scanner( state, j, grammar ) {
         var term = state['rhs'][state['dot']];
         var termPOS = grammar.partOfSpeech( words[j] );
@@ -97,6 +104,10 @@ function parse( words, grammar, rootRule ) {
         }
     }
     
+    // this function is called in case when given state is completed ('dot' == length of 'rhs')
+    // it means that discovered state could be appended to its parent state (and shift dot in parent state)
+    // actually - parent state is not changed, but new state is generated (parent state is cloned + shift of dot)
+    // new state is added to chart (to column with index 'k')
     function completer( state, k ) {
         var parentChart = chart[state['pos']];
         for(var i in parentChart) {
@@ -118,6 +129,8 @@ function parse( words, grammar, rootRule ) {
         }
     }
     
+    // printing chart to console.log
+    // TODO: remove
     function log( message, chart ) {
         console.log(message);
         for(var o in chart) {
@@ -126,6 +139,10 @@ function parse( words, grammar, rootRule ) {
         console.log();
     }
     
+    // Earley algorithm
+    // http://en.wikipedia.org/wiki/Earley_parser#Pseudocode
+    
+    // initial seed - adding states, which correponds to productions, where lhs is rootRule
     var rootRuleRhss = grammar[rootRule];
     for(var i in rootRuleRhss) {
         var initialState = {
@@ -136,7 +153,6 @@ function parse( words, grammar, rootRule ) {
         };
         addToChart(initialState, 0);
     }
-    
     log('init', chart);
     for(var i = 0; i < words.length + 1; i++) {
         j = 0;

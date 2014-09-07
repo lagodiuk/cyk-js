@@ -181,8 +181,19 @@ function parse( words, grammar, rootRule ) {
     }
     
     // search for state, which has rootRule in lhs
-    for(var i in chart[chart.length - 1]) {
+    // iterating through last column of chart
+    var roots = [];
+    var lastChartColumn = chart[chart.length - 1];
+    for(var i in lastChartColumn) {
+        var state = lastChartColumn[i];
+        if( state['lhs'] == rootRule && !incomplete( state ) ) {
+            // this is the root of valid parse tree
+            roots.push(state);
+        }
     }
+    
+    console.log('\n' + 'roots');
+    console.log(JSON.stringify(roots, null, 0));
 }
 
 

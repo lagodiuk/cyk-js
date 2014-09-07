@@ -54,7 +54,7 @@ function parse( words, grammar, rootRule ) {
               && chartState['dot'] == newState['dot']
               && chartState['pos'] == newState['pos']
               && JSON.stringify(chartState['rhs']) == JSON.stringify(newState['rhs'])) {
-                chartState['ref'] = (chartState['ref'].slice()).concat(newState['ref']);
+                chartState['ref'] = chartState['ref'].concat(newState['ref']);
                 return;
             }
         }        

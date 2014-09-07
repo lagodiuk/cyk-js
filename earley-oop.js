@@ -5,7 +5,7 @@ function Grammar( rules ) {
         // "A -> B C | D" -> ["A ", " B C | D"]
         var parts = rule.split('->');
         // "A"
-        var lhs = parts[0].trim();;
+        var lhs = parts[0].trim();
         // "B C | D"
         var rhss = parts[1].trim();
         // "B C | D" -> ["B C", "D"]
@@ -90,6 +90,9 @@ function State( lhs, rhs, dot, left, right ) {
     this.right = right;
     this.id = -1;
     this.ref = [];
+    for(var i = 0; i < rhs.length; i++) {
+        this.ref[i] = {};
+    }
 }
 
 State.prototype.complete = function() {
@@ -153,7 +156,13 @@ State.prototype.getRefsToChidStates = function() {
 }
 
 State.prototype.appendRefsToChidStates = function( refs ) {
-    this.ref = this.ref.concat( refs );
+    for(var i = 0; i < refs.length; i++) {
+        if(refs[i]) {
+            for(var j in refs[i]) {
+                this.ref[i][j] = refs[i][j];
+            }            
+        }
+    }
 }
 
 State.prototype.predictor = function( grammar, chart ) {
@@ -185,8 +194,15 @@ State.prototype.completer = function( chart ) {
         var existingState = statesInColumn[i];
         if(existingState.rhs[existingState.dot] == this.lhs) {
             var newState = new State( existingState.lhs, existingState.rhs, existingState.dot + 1, existingState.left, this.right);
+            
+            // copy existing refs to new state            
             newState.appendRefsToChidStates(existingState.ref);
-            newState.appendRefsToChidStates([{dot: existingState.dot, id: this.id}])
+            // add ref to current state
+            var rf = new Array(existingState.rhs.length);
+            rf[existingState.dot] = {};
+            rf[existingState.dot][this.id] = true;
+            newState.appendRefsToChidStates(rf)
+            
             chart.addToChart(newState, this.right);
         }
     }
@@ -228,9 +244,11 @@ var grammar = new Grammar([
     'S -> S add_sub M | M | num',
     'M -> M mul_div T | T | num',
     'T -> num',
+    ///*
     'num -> 2 | 3 | 4',
     'add_sub -> + | -',
     'mul_div -> * | /'
+    //*/
 ]);
 /*
 grammar.terminalSymbols = function( token ) {

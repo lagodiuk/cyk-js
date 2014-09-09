@@ -220,12 +220,15 @@ State.prototype.completer = function( chart ) {
 // TODO: instead of returning all possible parse trees - provide iterator + callback
 State.prototype.traverse = function() {
     if(this.ref.length == 1 && Object.keys(this.ref[0]).length == 0) {
-        // Leaf of the parse tree
+        // This is last production in parse tree (leaf)
+        var subtrees = [];
+        if(this.lhs != this.rhs) {
+            // prettify leafs of parse tree
+            subtrees.push({root: this.rhs});
+        }
         return [{
             root: this.lhs, 
-            subtrees: [{
-                root: this.rhs
-            }]
+            subtrees: subtrees
         }];
     }
 

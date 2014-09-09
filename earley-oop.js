@@ -71,6 +71,10 @@ Chart.prototype.countStatesInColumn = function( index ) {
     return this.chart[index].length;
 }
 
+Chart.prototype.getState = function( id ) {
+    return this.idToState[ id ];
+}
+
 Chart.prototype.log = function( column ) {
     console.log('-------------------')
     console.log( 'Column: ' + column )
@@ -200,11 +204,61 @@ State.prototype.completer = function( chart ) {
             // add ref to current state
             var rf = new Array(existingState.rhs.length);
             rf[existingState.dot] = {};
-            rf[existingState.dot][this.id] = true;
+            rf[existingState.dot][this.id] = this;
             newState.appendRefsToChidStates(rf)
             
             chart.addToChart(newState, this.right);
         }
+    }
+}
+
+//------------------------------------------------------------------------------------
+
+// Returning all possible correct parse trees
+// Possible exponential complexity and memory consumption!
+// Take care of your grammar!
+// TODO: instead of returning all possible parse trees - provide iterator + callback
+State.prototype.traverse = function() {
+    if(this.ref.length == 1 && Object.keys(this.ref[0]).length == 0) {
+        // Leaf of the parse tree
+        return [{
+            root: this.lhs, 
+            subtrees: [{
+                root: this.rhs
+            }]
+        }];
+    }
+
+    var rhsSubTrees = [];    
+    for(var i = 0; i < this.ref.length; i++) {
+        rhsSubTrees[i] = [];
+        for(var j in this.ref[i]) {
+            rhsSubTrees[i] = rhsSubTrees[i].concat( this.ref[i][j].traverse() );
+        }
+    }
+    
+    var possibleSubTrees = [];
+    combinations( rhsSubTrees, 0, [], possibleSubTrees );
+        
+    var result = [];
+    for(var i in possibleSubTrees) {
+        result.push({root: this.lhs, subtrees: possibleSubTrees[i]})
+    }
+    return result;
+}
+
+// Generating array of all possible combinations, e.g.:
+// input: [[1, 2, 3], [4, 5]]
+// output: [[1, 4], [1, 5], [2, 4], [2, 5], [3, 4], [3, 5]]
+function combinations( arrOfArr, i, stack, result ) {
+    if( i == arrOfArr.length ) {
+        result.push( stack.slice() );
+        return;
+    }
+    for(var j in arrOfArr[i]) {
+        stack.push( arrOfArr[i][j] );
+        combinations( arrOfArr, i + 1, stack, result );
+        stack.pop();
     }
 }
 
@@ -235,6 +289,7 @@ function parse( tokens, grammar, rootRule ) {
         }
         chart.log(i)
     }
+    return chart;
 }
 
 //------------------------------------------------------------------------------------
@@ -258,4 +313,11 @@ grammar.terminalSymbols = function( token ) {
 }
 */
 
-parse('2 + 3 * 4'.split(' '), grammar, 'R');
+var chart = parse('2 + 3 * 4'.split(' '), grammar, 'R');
+
+console.log('\n')
+var state = chart.getState( 61 );
+var trees = state.traverse();
+for(var i in trees) {
+    console.log(JSON.stringify(trees[i]))
+}

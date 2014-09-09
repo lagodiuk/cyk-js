@@ -323,4 +323,22 @@ var state = chart.getState( 61 );
 var trees = state.traverse();
 for(var i in trees) {
     console.log(JSON.stringify(trees[i]))
+    document.body.innerHTML += '<div class="tree" id="displayTree"><ul>' + displayTree(trees[i]) + '</ul></div></br>'
+}
+
+function displayTree( tree ) {
+    if(tree.subtrees.length == 0) {
+        return '<li><a href="#">' + tree.root + '</a></li>';
+    }
+    var builder = [];
+    builder.push('<li><a href="#">');
+    builder.push(tree.root);
+    builder.push('</a>')
+    builder.push('<ul>')
+    for(var i in tree.subtrees) {
+        builder.push(displayTree(tree.subtrees[i]))
+    }
+    builder.push('</ul>')
+    builder.push('</li>')
+    return builder.join('');
 }

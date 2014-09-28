@@ -19,7 +19,7 @@ var tinynlp = (function(){
                 this.lhsToRhsList[lhs].push(rhssParts[j].trim().split(' '));
             }
             // now this.lhsToRhsList contains list of these rules:
-            // {... "A": [["B C"], ["D"]] ...}
+            // {... "A": [["B", "C"], ["D"]] ...}
         }
     }
     Grammar.prototype.terminalSymbols = function(token) {
